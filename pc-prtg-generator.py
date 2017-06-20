@@ -3,7 +3,6 @@ import sys
 import argparse
 import re
 import ssl
-import http
 import xml.etree.ElementTree as ET
 from enum import Enum
 from csv import reader
@@ -23,7 +22,6 @@ DEVICE_NAME_COLUMN = 0
 DEVICE_LOCATION_COLUMN = 1
 DEVICE_URL_COLUMN = 2
 
-# Enums
 class CheckType(Enum):
     PING = 1
     DOTNET = 2
@@ -98,11 +96,11 @@ def createSensorNode(sensorType, displayName, tags, url, **kwargs):
     ET.SubElement(createData, 'tags').text = tags
     ET.SubElement(createData, 'priority').text = '3'
 
-    if sensorType == SensorType.HTTP:
+    if sensorType is SensorType.HTTP:
         node.set('requires', 'ping')
         node.set('kind', 'http')
         ET.SubElement(createData, 'httpurl').text = url
-    elif sensorType == SensorType.XML:
+    elif sensorType is SensorType.XML:
         node.set('requires', 'dotnet40')
         node.set('kind', 'ptfhttpxmlrestvalue')
         ET.SubElement(createData, 'xmlurl').text = url
@@ -306,7 +304,8 @@ def main():
     port = '80'
 
     if scheme == 'https':
-        https_handler = HTTPSHandler(context = ssl.SSLContext(ssl.PROTOCOL_SSLv23))
+        https_handler = HTTPSHandler(
+            context=ssl.SSLContext(ssl.PROTOCOL_SSLv23))
         install_opener(build_opener(https_handler))
 
     if pcUrl.port is not None:
