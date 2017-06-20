@@ -2,9 +2,12 @@
 import sys
 import argparse
 import re
+import ssl
+import http
 import xml.etree.ElementTree as ET
+from enum import Enum
 from csv import reader
-from urllib.request import Request, urlopen, URLError
+from urllib.request import Request, urlopen, URLError, build_opener, install_opener, HTTPSHandler
 from urllib.parse import urlparse
 from itertools import islice
 from codecs import iterdecode
@@ -21,19 +24,17 @@ DEVICE_LOCATION_COLUMN = 1
 DEVICE_URL_COLUMN = 2
 
 # Enums
-
-
-class CheckType:
+class CheckType(Enum):
     PING = 1
     DOTNET = 2
 
 
-class SensorType:
+class SensorType(Enum):
     HTTP = 1
     XML = 2
 
 
-class DeviceType:
+class DeviceType(Enum):
     PRINTER = 1
     DEVICE = 2
 
@@ -236,40 +237,41 @@ def createDeviceCollection(source, max):
 
 class PapercutServer:
 
-    def __init__(self, address, authkey, port):
+    def __init__(self, scheme, address, port, authkey):
+        self.scheme = scheme
         self.address = address
-        self.authkey = authkey
         self.port = port
+        self.authkey = authkey
 
     # API Urls
     def getServerHealthNodeUrl(self):
-        return 'http://{0}:{2}/api/health?Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/health?Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     def getHeldJobsNodeUrl(self):
-        return 'http://{0}:{2}/api/stats/held-jobs-count?Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/stats/held-jobs-count?Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     def getRecentPagesNodeUrl(self):
-        return 'http://{0}:{2}/api/stats/recent-pages-count?minutes=1&Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/stats/recent-pages-count?minutes=1&Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     def getRecentErrorsNodeUrl(self):
-        return 'http://{0}:{2}/api/stats/recent-errors-count?minutes=10&Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/stats/recent-errors-count?minutes=10&Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     def getRecentWarningsNodeUrl(self):
-        return 'http://{0}:{2}/api/stats/recent-warnings-count?minutes=1&Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/stats/recent-warnings-count?minutes=1&Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     # CSV Urls
     def getPrintersCSVUrl(self):
-        return 'http://{0}:{2}/api/health/printers/urls?Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/health/printers/urls?Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
     def getDevicesCSVUrl(self):
-        return 'http://{0}:{2}/api/health/devices/urls?Authorization={1}'\
-            .format(self.address, self.authkey, self.port)
+        return '{0}://{1}:{2}/api/health/devices/urls?Authorization={3}'\
+            .format(self.scheme, self.address, self.port, self.authkey)
 
 
 class Printer:
@@ -299,15 +301,21 @@ class Printer:
 
 
 def main():
+    scheme = pcUrl.scheme
     address = pcUrl.hostname
     port = '80'
+
+    if scheme == 'https':
+        https_handler = HTTPSHandler(context = ssl.SSLContext(ssl.PROTOCOL_SSLv23))
+        install_opener(build_opener(https_handler))
+
     if pcUrl.port is not None:
         port = pcUrl.port
     authkey = re.split('[=&]', pcUrl.query)[-1]
 
-    server = PapercutServer(address, authkey, port)
-    print('Connecting to PaperCut Installation at {0}:{1}'
-          .format(server.address, server.port))
+    server = PapercutServer(scheme, address, port, authkey)
+    print('Connecting to PaperCut Installation at {0}://{1}:{2}'
+          .format(server.scheme, server.address, server.port))
     print('Filtering:\n\tServer:\t\t{0}\n\tLocation:\t{1}\n\tName:\t\t{2}'
           .format(args.server, args.location, args.name))
 
