@@ -115,7 +115,7 @@ def createDeviceTemplateRoot(**kwargs):
     root = ET.Element('devicetemplate')
     root.set('id', kwargs.get('id', ''))
     root.set('name', kwargs.get('name', ''))
-    root.set('priority', kwargs.get('priority', '40'))
+    root.set('priority', kwargs.get('priority', '1'))
     root.set('adddevicename', kwargs.get('name', ''))
 
     return root
