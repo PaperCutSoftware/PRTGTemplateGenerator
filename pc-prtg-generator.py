@@ -113,7 +113,7 @@ def createSensorNode(sensorType, displayName, tags, url, **kwargs):
 
 def createDeviceTemplateRoot(**kwargs):
     root = ET.Element('devicetemplate')
-    root.set('id', kwargs.get('id', ''))
+    root.set('id', kwargs.get('id', 'custom'))
     root.set('name', kwargs.get('name', ''))
     root.set('priority', kwargs.get('priority', '1'))
     root.set('adddevicename', kwargs.get('name', ''))
@@ -162,7 +162,7 @@ def buildServerTemplate(server):
 
 
 def buildPrinterTemplate(printerCollection, **kwargs):
-    id = kwargs.get('id', '')
+    id = kwargs.get('id', 'custom')
     name = kwargs.get('name', '')
     root = createDeviceTemplateRoot(id=id,
                                     name=name)
